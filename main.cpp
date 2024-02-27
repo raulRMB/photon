@@ -1,7 +1,5 @@
-#include <iostream>
+#include "src/core/Renderer.h"
 
-int main()
-{
-    std::cout << "Hello, Photon!" << std::endl;
-    return 0;
+int main() {
+    return photon::Renderer::Go();
 }

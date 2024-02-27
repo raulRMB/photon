@@ -1,0 +1,1 @@
+emcmake cmake -B ./web-build && cmake --build ./web-build && python3 -m http.server --directory ./web-build
