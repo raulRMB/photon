@@ -1,5 +1,6 @@
 #include "src/core/Renderer.h"
 
-int main() {
+int main()
+{
     return photon::Renderer::Go();
 }

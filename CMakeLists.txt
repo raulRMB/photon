@@ -9,7 +9,7 @@ add_executable(${PROJECT_NAME} main.cpp ${SOURCES} ${HEADERS})
 
 if(EMSCRIPTEN)
   set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
-  target_link_options(${PROJECT_NAME} PRIVATE "-sUSE_WEBGPU=1" "-sUSE_GLFW=3")
+  target_link_options(${PROJECT_NAME} PRIVATE "-sUSE_WEBGPU=1" "-sUSE_GLFW=3" "--preload-file=c:/dev/photon/res@/res")
 else()
   set(DAWN_FETCH_DEPENDENCIES ON)
   add_subdirectory("lib/dawn" EXCLUDE_FROM_ALL)
