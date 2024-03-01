@@ -9,6 +9,10 @@
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
+
 namespace photon
 {
 
@@ -20,6 +24,7 @@ void Renderer::GetDevice(void (*callback)(wgpu::Device)) {
         [](WGPURequestAdapterStatus status, WGPUAdapter cAdapter,
            const char* message, void* userdata) {
             if (status != WGPURequestAdapterStatus_Success) {
+                LogError("Failed to acquire adapter");
                 exit(0);
             }
             wgpu::Adapter adapter = wgpu::Adapter::Acquire(cAdapter);
@@ -74,6 +79,10 @@ void Renderer::Start()
         static_cast<Renderer*>(arg)->Render();
     };
     emscripten_set_main_loop_arg(RenderLoopCallBack, this, -1, true);
+//    emscripten_set_resize_callback(nullptr, this, true, [](int, int, void* arg)
+//    {
+//        static_cast<Renderer*>(arg)->wSwapChain.Configure(kWidth, kHeight);
+//    });
 #else
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -483,6 +492,7 @@ void Renderer::DrawMesh(wgpu::RenderPassEncoder& renderPass)
     model = glm::scale(model, scale);
     uniforms.m_Model = model;
     uniforms.m_CameraPosition = Camera.Position;
+
     uniforms.m_Projection = glm::perspective(glm::radians(45.0f), (f32)kWidth / (f32)kHeight, 0.1f, 100.0f);
     uniforms.m_View = glm::lookAt(Camera.Position, Camera.Position + Camera.Front, Camera.Up);
     uniforms.m_padding = (f32)glfwGetTime();

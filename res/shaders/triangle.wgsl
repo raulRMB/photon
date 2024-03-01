@@ -131,9 +131,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     lights[3].position = vec3f(cos3, -1, sin3);
     lights[3].color = vec3f(1.0, 1.0, 0.0);
 
+
+
     let frag_pos = in.frag_pos;
-
-
 
     let metalic = textureSample(base_color_texture, texture_sampler, in.uv).r;
     let albedo = textureSample(base_color_texture, texture_sampler, in.uv).rgb;
@@ -149,8 +149,17 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     let world_normal = normalize(TBN * (local_normal * 2.0 - 1.0));
 
     let N = normalize(in.normal);
-    // let N = normalize(mix(in.normal, world_normal, 0.5));
+    //let N = normalize(mix(in.normal, world_normal, 0.5));
     let V = normalize(in.view_pos - frag_pos);
+
+    let ibl_direction = -reflect(V, N);
+
+    let theta = acos(ibl_direction.y / length(ibl_direction));
+    let phi = atan2(ibl_direction.z, ibl_direction.x);
+
+    let ibl_uv = vec2f(phi / (2.0 * PI) + 0.5,theta / PI);
+
+    let irradiance = textureSampleLevel(environment_texture, texture_sampler, ibl_uv, 6.0).rgb;
 
     var F0 = vec3f(0.04);
     F0 = mix(F0, albedo, metalic);
@@ -184,22 +193,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    let ambient = vec3f(0.03) * albedo * 0.2;
+    let ambient = vec3f(0.03) * albedo * 0.2 * irradiance;
     var color = ambient + Lo;
 
     color = color / (color + vec3f(1.0));
     color = pow(color, vec3f(1.0 / 2.2));
 
-    let ibl_direction = -reflect(V, N);
 
-    let theta = acos(ibl_direction.y / length(ibl_direction));
-    let phi = atan2(ibl_direction.z, ibl_direction.x);
 
-    let ibl_uv = vec2f(phi / (2.0 * PI) + 0.5,theta / PI);
-
-    let ibl_sample = textureSampleLevel(environment_texture, texture_sampler, ibl_uv, 6.0).rgb;
-
-    color = ibl_sample;
+    //color = irradiance;
 
     return vec4f(color, 1.0);
 }

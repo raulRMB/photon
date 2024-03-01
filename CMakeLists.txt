@@ -21,6 +21,8 @@ if(EMSCRIPTEN)
           "-sUSE_WEBGPU=1"
           "-sUSE_GLFW=3"
           "-sALLOW_MEMORY_GROWTH=1"
+          "-sASSERTIONS=1"
+          "-sSINGLE_FILE=1"
           "--preload-file=${CMAKE_CURRENT_LIST_DIR}/res@res"
           "--shell-file=${CMAKE_CURRENT_LIST_DIR}/src/shell.html")
   target_link_libraries(${PROJECT_NAME} PRIVATE glm tinygltf)

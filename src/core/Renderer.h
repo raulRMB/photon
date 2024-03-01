@@ -22,9 +22,6 @@
 namespace photon
 {
 
-const u32 kWidth = 1920;
-const u32 kHeight = 900;
-
 struct ShaderUniforms
 {
     m4 m_Model;
@@ -36,6 +33,8 @@ struct ShaderUniforms
 
 class Renderer
 {
+    u32 kWidth = 1920;
+    u32 kHeight = 900;
 private:
     wgpu::Instance wInstance;
     wgpu::Device wDevice;
