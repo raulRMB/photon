@@ -6,6 +6,7 @@
 #define PHOTON_TYPES_H
 
 #include <glm/glm.hpp>
+#include <vector>
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -29,5 +30,10 @@ typedef glm::mat3 m3;
 typedef glm::mat4 m4;
 
 typedef u8 byte;
+
+template <typename T, u32 size>
+using array = std::array<T, size>;
+template <typename T>
+using dArray = std::vector<T>;
 
 #endif //PHOTON_TYPES_H

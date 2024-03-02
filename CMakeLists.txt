@@ -24,6 +24,7 @@ if(EMSCRIPTEN)
           "-sASSERTIONS=1"
           "-sSINGLE_FILE=1"
           "--preload-file=${CMAKE_CURRENT_LIST_DIR}/res@res"
+          "-sNO_DISABLE_EXCEPTION_CATCHING=1"
           "--shell-file=${CMAKE_CURRENT_LIST_DIR}/src/shell.html")
   target_link_libraries(${PROJECT_NAME} PRIVATE glm tinygltf)
 else()

@@ -1212,7 +1212,7 @@ RenderPipelineBase* DeviceBase::APICreateRenderPipeline(
 
     Ref<RenderPipelineBase> result;
     if (ConsumedError(CreateRenderPipeline(descriptor), &result, InternalErrorType::Internal,
-                      "calling %s.SetupRenderPipeline(%s).", this, descriptor)) {
+                      "calling %s.SetupMeshPipeline(%s).", this, descriptor)) {
         return RenderPipelineBase::MakeError(this, descriptor ? descriptor->label : nullptr);
     }
     return result.Detach();

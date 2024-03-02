@@ -97,14 +97,21 @@ void Renderer::InitGraphics()
 {
     SetupCamera();
     SetupSwapChain();
-    SetupVertexBuffers();
+    SetupMeshVertexBuffers();
     SetupDepthStencil();
-    LoadTextures();
-    SetupUniformBuffer();
+    LoadTextures("brick", ETextureImportType::jpg);
+    SetupMeshUniformBuffer();
     SetupSampler();
-    SetupBindGroupLayout();
-    SetupBindGroup();
-    SetupRenderPipeline();
+
+    SetupMeshBindGroupLayout();
+    SetupMeshBindGroup();
+
+    SetupSkyboxBindGroupLayout();
+    SetupSkyboxBindGroup();
+
+    SetupMeshPipeline();
+
+    SetupSkyboxPipeline();
 
     Mesh = ResourceLoader::LoadMesh("su.glb", wDevice, EModelImportType::glb);
 }
@@ -120,13 +127,14 @@ void Renderer::SetupSwapChain()
     wSwapChain = wDevice.CreateSwapChain(wSurface, &scDesc);
 }
 
-void Renderer::SetupRenderPipeline()
+void Renderer::SetupMeshPipeline()
 {
     wgpu::ShaderModuleWGSLDescriptor wgslDesc{};
-    wgslDesc.code = Reader::ReadTextFile("shaders/triangle.wgsl");
+    wgslDesc.code = Reader::ReadTextFile("shaders/pbr_mat.wgsl");
 
     wgpu::ShaderModuleDescriptor shaderModuleDescriptor{
             .nextInChain = &wgslDesc};
+    shaderModuleDescriptor.label = "PBR Material Shader Module";
     wgpu::ShaderModule shaderModule =
             wDevice.CreateShaderModule(&shaderModuleDescriptor);
 
@@ -144,6 +152,7 @@ void Renderer::SetupRenderPipeline()
     wgpu::PipelineLayout pipelineLayout = wDevice.CreatePipelineLayout(&pipelineLayoutDescriptor);
 
     wgpu::RenderPipelineDescriptor descriptor{
+            .label = "Mesh",
             .layout = pipelineLayout,
             .vertex = {.module = shaderModule},
             .depthStencil = &wDepthStencilState,
@@ -180,9 +189,8 @@ void Renderer::Render()
 
     wgpu::CommandEncoder encoder = wDevice.CreateCommandEncoder();
     wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderpass);
-    pass.SetPipeline(wRenderPipeline);
-    pass.SetBindGroup(0, wBindGroup, 0, nullptr);
 
+    DrawSkybox(pass);
     DrawMesh(pass);
 
     pass.End();
@@ -204,7 +212,7 @@ bool Renderer::Go()
     return EXIT_SUCCESS;
 }
 
-void Renderer::SetupBindGroupLayout()
+void Renderer::SetupMeshBindGroupLayout()
 {
     wBindGroupLayoutEntries.resize(7, {});
 
@@ -245,7 +253,7 @@ void Renderer::SetupBindGroupLayout()
     wBindGroupLayoutEntries[6].binding = 6;
     wBindGroupLayoutEntries[6].visibility = wgpu::ShaderStage::Fragment;
     wBindGroupLayoutEntries[6].texture.sampleType = wgpu::TextureSampleType::Float;
-    wBindGroupLayoutEntries[6].texture.viewDimension = wgpu::TextureViewDimension::e2D;
+    wBindGroupLayoutEntries[6].texture.viewDimension = wgpu::TextureViewDimension::Cube;
     wBindGroupLayoutEntries[6].texture.multisampled = false;
 
     wgpu::BindGroupLayoutDescriptor bindGroupLayoutDescriptor{
@@ -256,7 +264,7 @@ void Renderer::SetupBindGroupLayout()
     wBindGroupLayout = wDevice.CreateBindGroupLayout(&bindGroupLayoutDescriptor);
 }
 
-void Renderer::SetupBindGroup()
+void Renderer::SetupMeshBindGroup()
 {
     wBindGroupEntries.resize(7, {});
 
@@ -281,7 +289,7 @@ void Renderer::SetupBindGroup()
     wBindGroupEntries[5].textureView = wRoughnessTextureView;
 
     wBindGroupEntries[6].binding = 6;
-    wBindGroupEntries[6].textureView = wEnvironmentTextureView;
+    wBindGroupEntries[6].textureView = wSkyboxTextureView;
 
     wgpu::BindGroupDescriptor bindGroupDescriptor{
         .layout = wBindGroupLayout,
@@ -310,7 +318,7 @@ void Renderer::SetupSampler()
     wSampler = wDevice.CreateSampler(&samplerDescriptor);
 }
 
-void Renderer::SetupUniformBuffer()
+void Renderer::SetupMeshUniformBuffer()
 {
     wgpu::BufferDescriptor bufferDescriptor{
         .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
@@ -321,34 +329,52 @@ void Renderer::SetupUniformBuffer()
     wUniformBuffer = wDevice.CreateBuffer(&bufferDescriptor);
     ShaderUniforms uniforms{};
     wDevice.GetQueue().WriteBuffer(wUniformBuffer, 0, &uniforms, sizeof(ShaderUniforms));
+
+    bufferDescriptor.size = sizeof(SkyboxMapUniforms);
+    wSkyboxUniformBuffer = wDevice.CreateBuffer(&bufferDescriptor);
+    SkyboxMapUniforms cubeMapUniforms{};
+    wDevice.GetQueue().WriteBuffer(wSkyboxUniformBuffer, 0, &cubeMapUniforms, sizeof(SkyboxMapUniforms));
 }
 
-void Renderer::LoadTextures()
+void Renderer::LoadTextures(const std::string& name, const ETextureImportType type)
 {
-    std::string name = "metal";
-    if(wAlbedoTexture = ResourceLoader::LoadTexture((name + "_c.png").c_str(), wDevice, ETextureImportType::png, &wAlbedoTextureView); !wAlbedoTexture)
+    std::string suffix = "";
+
+    switch (type)
+    {
+        case ETextureImportType::png:
+            suffix = ".png";
+            break;
+        case ETextureImportType::jpg:
+            suffix = ".jpg";
+            break;
+        default:
+            break;
+    }
+
+    if(wAlbedoTexture = ResourceLoader::LoadTexture((name + "_c" + suffix).c_str(), wDevice, type, &wAlbedoTextureView); !wAlbedoTexture)
     {
         LogError("Could not load albedo texture!");
     }
 
-    if(wNormalTexture = ResourceLoader::LoadTexture((name + "_n.png").c_str(), wDevice, ETextureImportType::png, &wNormalTextureView); !wNormalTexture)
+    if(wNormalTexture = ResourceLoader::LoadTexture((name + "_n" + suffix).c_str(), wDevice, type, &wNormalTextureView); !wNormalTexture)
     {
         LogError("Could not load normal texture!");
     }
 
-    if(wRoughnessTexture = ResourceLoader::LoadTexture((name + "_r.png").c_str(), wDevice, ETextureImportType::png, &wRoughnessTextureView); !wRoughnessTexture)
+    if(wRoughnessTexture = ResourceLoader::LoadTexture((name + "_r" + suffix).c_str(), wDevice, type, &wRoughnessTextureView); !wRoughnessTexture)
     {
         LogError("Could not load roughness texture!");
     }
 
-    if(wMetallicTexture = ResourceLoader::LoadTexture((name + "_m.png").c_str(), wDevice, ETextureImportType::png, &wMetallicTextureView); !wMetallicTexture)
+    if(wMetallicTexture = ResourceLoader::LoadTexture((name + "_m" + suffix).c_str(), wDevice, type, &wMetallicTextureView); !wMetallicTexture)
     {
         LogError("Could not load metallic texture!");
     }
 
-    if(wEnvironmentTexture = ResourceLoader::LoadTexture("autumn_park_4k.jpg", wDevice, ETextureImportType::jpg, &wEnvironmentTextureView); !wEnvironmentTexture)
+    if(wSkyboxTexture = ResourceLoader::LoadCubeMap("golden_bay", wDevice, ETextureImportType::png, &wSkyboxTextureView); !wSkyboxTexture)
     {
-        LogError("Could not load environment texture!");
+        LogError("Could not load cubemap texture!");
     }
 }
 
@@ -357,7 +383,7 @@ void Renderer::SetupDepthStencil()
     wDepthStencilState = wgpu::DepthStencilState{
         .format = wgpu::TextureFormat::Depth16Unorm,
         .depthWriteEnabled = true,
-        .depthCompare = wgpu::CompareFunction::Less,
+        .depthCompare = wgpu::CompareFunction::LessEqual,
         .stencilReadMask = 0,
         .stencilWriteMask = 0,
     };
@@ -387,7 +413,7 @@ void Renderer::SetupDepthStencil()
     wDepthTextureView = wDepthTexture.CreateView(&depthTextureViewDescriptor);
 }
 
-void Renderer::SetupVertexBuffers()
+void Renderer::SetupMeshVertexBuffers()
 {
     wVertexAttributes.resize(6, {});
 
@@ -457,10 +483,23 @@ void Renderer::SetupVertexBuffers()
     wVertexBufferLayouts[5].arrayStride = 2 * sizeof(float);
     wVertexBufferLayouts[5].attributes = &wVertexAttributes[5];
     wVertexBufferLayouts[5].stepMode = wgpu::VertexStepMode::Vertex;
+
+    // CubeMap Vertex Attribute
+    wSkyboxVertexAttribute.shaderLocation = 0;
+    wSkyboxVertexAttribute.format = wgpu::VertexFormat::Float32x3;
+    wSkyboxVertexAttribute.offset = 0;
+
+    wSkyboxVertexBufferLayout.attributeCount = 1;
+    wSkyboxVertexBufferLayout.arrayStride = 3 * sizeof(float);
+    wSkyboxVertexBufferLayout.attributes = &wSkyboxVertexAttribute;
+    wSkyboxVertexBufferLayout.stepMode = wgpu::VertexStepMode::Vertex;
 }
 
 void Renderer::DrawMesh(wgpu::RenderPassEncoder& renderPass)
 {
+    renderPass.SetPipeline(wRenderPipeline);
+    renderPass.SetBindGroup(0, wBindGroup, 0, nullptr);
+
     v3 pos = v3(0.f);
     v3 rot = v3(0.f);
     v3 scale = v3(1.f);
@@ -486,18 +525,16 @@ void Renderer::DrawMesh(wgpu::RenderPassEncoder& renderPass)
     ShaderUniforms uniforms{};
     m4 model = m4(1.0f);
     model = glm::translate(model, pos);
-    model = glm::rotate(model, glm::radians(rot.x), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians((f32)glfwGetTime() * 10.f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::rotate(model, glm::radians((f32)glfwGetTime() * 10.f), glm::vec3(0.0f, 0.0f, 1.0f));
-    model = glm::scale(model, scale);
+    model = glm::rotate(model, glm::radians((f32)glfwGetTime() * 30.f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians((f32)glfwGetTime() * 80.f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians((f32)glfwGetTime() * 40.f), glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::scale(model, scale * 0.5f);
     uniforms.m_Model = model;
     uniforms.m_CameraPosition = Camera.Position;
 
     uniforms.m_Projection = glm::perspective(glm::radians(45.0f), (f32)kWidth / (f32)kHeight, 0.1f, 100.0f);
-    uniforms.m_View = glm::lookAt(Camera.Position, Camera.Position + Camera.Front, Camera.Up);
+    uniforms.m_View = glm::lookAt(Camera.Position, v3(0.0f), Camera.Up);
     uniforms.m_padding = (f32)glfwGetTime();
-
-    // uniforms.m_CameraPosition = Engine::GetMainCameraPosition();
 
     wDevice.GetQueue().WriteBuffer(wUniformBuffer, 0, &uniforms, sizeof(ShaderUniforms));
 
@@ -518,6 +555,110 @@ void Renderer::SetupCamera()
     Camera.Front = v3(0.0f, 0.0f, -1.0f);
     Camera.Up = v3(0.0f, 1.0f, 0.0f);
     Camera.Right = v3(1.0f, 0.0f, 0.0f);
+}
+
+void Renderer::SetupSkyboxPipeline()
+{
+    wgpu::ShaderModuleWGSLDescriptor wgslDesc{};
+    wgslDesc.code = Reader::ReadTextFile("shaders/cubemap.wgsl");
+
+    wgpu::ShaderModuleDescriptor shaderModuleDescriptor{
+        .nextInChain = &wgslDesc
+    };
+    shaderModuleDescriptor.label = "CubeMap Shader Module";
+    wgpu::ShaderModule shaderModule =
+            wDevice.CreateShaderModule(&shaderModuleDescriptor);
+
+    wgpu::ColorTargetState colorTargetState{
+            .format = wgpu::TextureFormat::BGRA8Unorm};
+
+    wgpu::FragmentState fragmentState{.module = shaderModule,
+            .targetCount = 1,
+            .targets = &colorTargetState};
+
+    wgpu::PipelineLayoutDescriptor pipelineLayoutDescriptor{
+            .bindGroupLayoutCount = 1,
+            .bindGroupLayouts = &wSkyboxBindGroupLayout};
+
+    wgpu::PipelineLayout pipelineLayout = wDevice.CreatePipelineLayout(&pipelineLayoutDescriptor);
+
+    wgpu::RenderPipelineDescriptor descriptor{
+            .label = "CubeMap",
+            .layout = pipelineLayout,
+            .vertex = {.module = shaderModule},
+            .depthStencil = &wDepthStencilState,
+            .fragment = &fragmentState,
+    };
+
+//    descriptor.vertex.bufferCount = 1;
+//    descriptor.vertex.buffers = &wCubeMapVertexBufferLayout;
+
+    wCubeMapPipeline = wDevice.CreateRenderPipeline(&descriptor);
+}
+
+void Renderer::SetupSkyboxBindGroupLayout()
+{
+    wSkyboxBindGroupEntryLayouts[0].binding = 0;
+    wSkyboxBindGroupEntryLayouts[0].buffer.hasDynamicOffset = false;
+    wSkyboxBindGroupEntryLayouts[0].visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment;
+    wSkyboxBindGroupEntryLayouts[0].buffer.type = wgpu::BufferBindingType::Uniform;
+    wSkyboxBindGroupEntryLayouts[0].buffer.minBindingSize = sizeof(SkyboxMapUniforms);
+
+    wSkyboxBindGroupEntryLayouts[1].binding = 1;
+    wSkyboxBindGroupEntryLayouts[1].visibility = wgpu::ShaderStage::Fragment;
+    wSkyboxBindGroupEntryLayouts[1].sampler.type = wgpu::SamplerBindingType::Filtering;
+
+    wSkyboxBindGroupEntryLayouts[2].binding = 2;
+    wSkyboxBindGroupEntryLayouts[2].visibility = wgpu::ShaderStage::Fragment;
+    wSkyboxBindGroupEntryLayouts[2].texture.sampleType = wgpu::TextureSampleType::Float;
+    wSkyboxBindGroupEntryLayouts[2].texture.viewDimension = wgpu::TextureViewDimension::Cube;
+    wSkyboxBindGroupEntryLayouts[2].texture.multisampled = false;
+
+    wgpu::BindGroupLayoutDescriptor bindGroupLayoutDescriptor{
+        .entryCount = wSkyboxBindGroupEntryLayouts.size(),
+        .entries = wSkyboxBindGroupEntryLayouts.data()
+    };
+
+    wSkyboxBindGroupLayout = wDevice.CreateBindGroupLayout(&bindGroupLayoutDescriptor);
+}
+
+void Renderer::SetupSkyboxBindGroup()
+{
+    wSkyboxBindGroupEntries[0].binding = 0;
+    wSkyboxBindGroupEntries[0].buffer = wSkyboxUniformBuffer;
+    wSkyboxBindGroupEntries[0].offset = 0;
+    wSkyboxBindGroupEntries[0].size = sizeof(SkyboxMapUniforms);
+
+    wSkyboxBindGroupEntries[1].binding = 1;
+    wSkyboxBindGroupEntries[1].sampler = wSampler;
+
+    wSkyboxBindGroupEntries[2].binding = 2;
+    wSkyboxBindGroupEntries[2].textureView = wSkyboxTextureView;
+
+
+    wgpu::BindGroupDescriptor bindGroupDescriptor{
+        .layout = wSkyboxBindGroupLayout,
+        .entryCount = wSkyboxBindGroupEntries.size(),
+        .entries = wSkyboxBindGroupEntries.data()
+    };
+
+    wSkyboxBindGroup = wDevice.CreateBindGroup(&bindGroupDescriptor);
+}
+
+void Renderer::DrawSkybox(wgpu::RenderPassEncoder &renderPass)
+{
+    renderPass.SetBindGroup(0, wSkyboxBindGroup, 0, nullptr);
+    renderPass.SetPipeline(wCubeMapPipeline);
+
+    Camera.Position = v3(cos(glfwGetTime() * .2f) * 4.f, 0.0f, -sin(glfwGetTime() * .2f) * 4.f);
+
+    SkyboxMapUniforms uniforms{};
+    m4 projection = glm::perspective(glm::radians(45.0f), (f32)kWidth / (f32)kHeight, 0.1f, 100.0f);
+    m4 view = glm::lookAt(Camera.Position, v3(0.0f), Camera.Up);
+    uniforms.m_MVPi = glm::inverse(projection * glm::mat4(glm::mat3(view)));
+
+    wDevice.GetQueue().WriteBuffer(wSkyboxUniformBuffer, 0, &uniforms, sizeof(SkyboxMapUniforms));
+    renderPass.Draw(3);
 }
 
 } // photon

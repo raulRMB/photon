@@ -8,6 +8,7 @@
 #include "PhotonCore.h"
 #include "CMesh.h"
 #include "CCamera.h"
+#include "ResourceLoader.h"
 
 #include <webgpu/webgpu_cpp.h>
 #include <iostream>
@@ -18,6 +19,7 @@
 #endif
 
 #include <vector>
+#include <array>
 
 namespace photon
 {
@@ -31,16 +33,29 @@ struct ShaderUniforms
     f32 m_padding;
 };
 
+struct SkyboxMapUniforms
+{
+    m4 m_MVPi;
+};
+
 class Renderer
 {
+#ifdef __EMSCRIPTEN__
     u32 kWidth = 1920;
     u32 kHeight = 900;
+#else
+    u32 kWidth = 1920;
+    u32 kHeight = 1080;
+#endif
+
 private:
     wgpu::Instance wInstance;
     wgpu::Device wDevice;
     wgpu::Surface wSurface;
     wgpu::SwapChain wSwapChain;
     wgpu::RenderPipeline wRenderPipeline;
+
+    wgpu::RenderPipeline wCubeMapPipeline;
 
     std::vector<wgpu::VertexBufferLayout> wVertexBufferLayouts;
     std::vector<wgpu::VertexAttribute> wVertexAttributes;
@@ -49,7 +64,9 @@ private:
     wgpu::BindGroupLayout wBindGroupLayout;
     wgpu::BindGroup wBindGroup;
     std::vector<wgpu::BindGroupEntry> wBindGroupEntries;
+
     wgpu::Buffer wUniformBuffer;
+    wgpu::Buffer wSkyboxUniformBuffer;
 
     wgpu::DepthStencilState wDepthStencilState;
     wgpu::Texture wDepthTexture;
@@ -69,8 +86,16 @@ private:
     wgpu::Texture wMetallicTexture;
     wgpu::TextureView wMetallicTextureView;
 
-    wgpu::Texture wEnvironmentTexture;
-    wgpu::TextureView wEnvironmentTextureView;
+    wgpu::Texture wSkyboxTexture;
+    wgpu::TextureView wSkyboxTextureView;
+
+    wgpu::BindGroupLayout wSkyboxBindGroupLayout;
+    wgpu::BindGroup wSkyboxBindGroup;
+    std::array<wgpu::BindGroupEntry, 3> wSkyboxBindGroupEntries;
+    std::array<wgpu::BindGroupLayoutEntry, 3> wSkyboxBindGroupEntryLayouts;
+
+    wgpu::VertexAttribute wSkyboxVertexAttribute;
+    wgpu::VertexBufferLayout wSkyboxVertexBufferLayout;
 
     CMesh Mesh;
     CCamera Camera;
@@ -89,18 +114,23 @@ private:
 
     void SetupSwapChain();
 
-    void SetupVertexBuffers();
+    void SetupMeshVertexBuffers();
+
     void SetupDepthStencil();
-    void LoadTextures();
-    void SetupUniformBuffer();
+    void LoadTextures(const std::string& name, ETextureImportType type);
+    void SetupMeshUniformBuffer();
     void SetupSampler();
-    void SetupBindGroupLayout();
-    void SetupBindGroup();
+    void SetupMeshBindGroupLayout();
+    void SetupMeshBindGroup();
 
-    void SetupRenderPipeline();
+    void SetupSkyboxBindGroupLayout();
+    void SetupSkyboxBindGroup();
 
+    void SetupMeshPipeline();
+    void SetupSkyboxPipeline();
 
     void DrawMesh(wgpu::RenderPassEncoder& renderPass);
+    void DrawSkybox(wgpu::RenderPassEncoder& renderPass);
     void Render();
 
     void SetupCamera();

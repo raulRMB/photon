@@ -37,11 +37,13 @@ class ResourceLoader
 {
 public:
     static CMesh LoadMesh(const char* path, const wgpu::Device& device, EModelImportType modelType = EModelImportType::glb);
-    static wgpu::Texture LoadTexture(const char* path, wgpu::Device& device, ETextureImportType importType, wgpu::TextureView* pTextureView = nullptr);
+    static wgpu::Texture LoadTexture(const char* path, wgpu::Device& device, ETextureImportType importType,
+                                     wgpu::TextureView* pTextureView = nullptr);
+    static wgpu::Texture LoadCubeMap(const char* path, wgpu::Device& device, ETextureImportType importType,
+                                     wgpu::TextureView* pTextureView = nullptr);
+
+    static u32 BitWidth(u32 m);
 private:
-    static void WriteMipMaps(const wgpu::Device& device, wgpu::Texture texture,
-                             wgpu::Extent3D textureSize, [[maybe_unused]] u32 mipLevelCount, // not used yet
-                             const unsigned char* pixelData);
     static m3 CalculateTangent(const v3& p1, const v3& p2, const v3& p3, const v2& uv1, const v2& uv2, const v2& uv3);
 };
 

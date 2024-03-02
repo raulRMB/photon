@@ -111,6 +111,7 @@ std::string Reader::Read()
         content += line + "\n";
     }
 
+    Close();
     return content;
 }
 

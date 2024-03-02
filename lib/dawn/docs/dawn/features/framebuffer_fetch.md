@@ -8,7 +8,7 @@ It is available on tiler Metal GPUs.
 
 ## Validation
 
-In `Device::SetupRenderPipeline` or `Device::CreateRenderPipelineAsync`:
+In `Device::SetupMeshPipeline` or `Device::CreateRenderPipelineAsync`:
  - For each `@color(N) in : T` fragment in:
    - color target N must exist
    - color target N's format must match T in both component count and base type

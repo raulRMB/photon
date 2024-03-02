@@ -22,7 +22,7 @@ wgpu::RenderPipelineDescriptor pipelineDesc = ...;
 pipelineDesc.multisample.count = 4;
 pipelineDesc.multisample.nextInChain = &pipelineMSAARenderToSingleSampledDesc;
 
-auto pipeline = device.SetupRenderPipeline(&pipelineDesc);
+auto pipeline = device.SetupMeshPipeline(&pipelineDesc);
 
 // Create a render pass with "implicit multi-sampled" enabled.
 wgpu::DawnRenderPassColorAttachmentRenderToSingleSampled colorAttachmentRenderToSingleSampledDesc;
