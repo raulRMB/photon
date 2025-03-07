@@ -21,9 +21,13 @@ typedef signed long long i64;
 typedef float f32;
 typedef double f64;
 
-typedef glm::vec2 v2;
-typedef glm::vec3 v3;
-typedef glm::vec4 v4;
+typedef glm::vec2 v2f;
+typedef glm::vec3 v3f;
+typedef glm::vec4 v4f;
+
+typedef glm::ivec2 v2i;
+typedef glm::ivec3 v3i;
+typedef glm::ivec4 v4i;
 
 typedef glm::mat2 m2;
 typedef glm::mat3 m3;

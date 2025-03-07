@@ -15,7 +15,7 @@ namespace photon
 #if defined(__EMSCRIPTEN__)
 #define RESOURCE_PATH std::string("res/")
 #else
-#define RESOURCE_PATH std::string("../res/")
+#define RESOURCE_PATH std::string("./res/")
 #endif
 
 #include "stb_image_write.h"
@@ -131,26 +131,26 @@ CMesh ResourceLoader::LoadMesh(const char *path, const wgpu::Device& device, EMo
 
     for(u32 i = 0; i < meshComponent.indexData.size(); i += 3)
     {
-        v3 p1 = v3(meshComponent.pointData[meshComponent.indexData[i + 0] * 3 + 0],
+        v3f p1 = v3f(meshComponent.pointData[meshComponent.indexData[i + 0] * 3 + 0],
                    meshComponent.pointData[meshComponent.indexData[i + 0] * 3 + 1],
                    meshComponent.pointData[meshComponent.indexData[i + 0] * 3 + 2]);
-        v3 p2 = v3(meshComponent.pointData[meshComponent.indexData[i + 1] * 3 + 0],
+        v3f p2 = v3f(meshComponent.pointData[meshComponent.indexData[i + 1] * 3 + 0],
                    meshComponent.pointData[meshComponent.indexData[i + 1] * 3 + 1],
                    meshComponent.pointData[meshComponent.indexData[i + 1] * 3 + 2]);
-        v3 p3 = v3(meshComponent.pointData[meshComponent.indexData[i + 2] * 3 + 0],
+        v3f p3 = v3f(meshComponent.pointData[meshComponent.indexData[i + 2] * 3 + 0],
                    meshComponent.pointData[meshComponent.indexData[i + 2] * 3 + 1],
                    meshComponent.pointData[meshComponent.indexData[i + 2] * 3 + 2]);
 
-        v2 uv1 = v2(meshComponent.uvData[meshComponent.indexData[i + 0] * 2 + 0],
+        v2f uv1 = v2f(meshComponent.uvData[meshComponent.indexData[i + 0] * 2 + 0],
                     meshComponent.uvData[meshComponent.indexData[i + 0] * 2 + 1]);
-        v2 uv2 = v2(meshComponent.uvData[meshComponent.indexData[i + 1] * 2 + 0],
+        v2f uv2 = v2f(meshComponent.uvData[meshComponent.indexData[i + 1] * 2 + 0],
                     meshComponent.uvData[meshComponent.indexData[i + 1] * 2 + 1]);
-        v2 uv3 = v2(meshComponent.uvData[meshComponent.indexData[i + 2] * 2 + 0],
+        v2f uv3 = v2f(meshComponent.uvData[meshComponent.indexData[i + 2] * 2 + 0],
                     meshComponent.uvData[meshComponent.indexData[i + 2] * 2 + 1]);
 
         m3 TBN = CalculateTangent(p1, p2, p3, uv1, uv2, uv3);
 
-        v3& tangent = TBN[0];
+        v3f& tangent = TBN[0];
 
         tangents[meshComponent.indexData[i + 0] * 3 + 0] = tangent.x;
         tangents[meshComponent.indexData[i + 0] * 3 + 1] = tangent.y;
@@ -164,7 +164,7 @@ CMesh ResourceLoader::LoadMesh(const char *path, const wgpu::Device& device, EMo
         tangents[meshComponent.indexData[i + 2] * 3 + 1] = tangent.y;
         tangents[meshComponent.indexData[i + 2] * 3 + 2] = tangent.z;
 
-        v3& bitangent = TBN[1];
+        v3f& bitangent = TBN[1];
         bitangents[meshComponent.indexData[i + 0] * 3 + 0] = bitangent.x;
         bitangents[meshComponent.indexData[i + 0] * 3 + 1] = bitangent.y;
         bitangents[meshComponent.indexData[i + 0] * 3 + 2] = bitangent.z;
@@ -326,17 +326,17 @@ wgpu::Texture ResourceLoader::LoadTexture(const char *path, wgpu::Device &device
     return texture;
 }
 
-m3 ResourceLoader::CalculateTangent(const v3 &p1, const v3 &p2, const v3 &p3, const v2 &uv1, const v2 &uv2,
-                                    const v2 &uv3)
+m3 ResourceLoader::CalculateTangent(const v3f &p1, const v3f &p2, const v3f &p3, const v2f &uv1, const v2f &uv2,
+                                    const v2f &uv3)
 {
-    v3 edge1 = p2 - p1;
-    v3 edge2 = p3 - p1;
-    v2 deltaUV1 = uv2 - uv1;
-    v2 deltaUV2 = uv3 - uv1;
+    v3f edge1 = p2 - p1;
+    v3f edge2 = p3 - p1;
+    v2f deltaUV1 = uv2 - uv1;
+    v2f deltaUV2 = uv3 - uv1;
 
-    v3 tangent = glm::normalize(edge1 * deltaUV2.y - edge2 * deltaUV1.y);
-    v3 bitangent = glm::normalize(edge2 * deltaUV1.x - edge1 * deltaUV2.x);
-    v3 normal = glm::normalize(glm::cross(edge1, edge2));
+    v3f tangent = glm::normalize(edge1 * deltaUV2.y - edge2 * deltaUV1.y);
+    v3f bitangent = glm::normalize(edge2 * deltaUV1.x - edge1 * deltaUV2.x);
+    v3f normal = glm::normalize(glm::cross(edge1, edge2));
 
     return m3(tangent, bitangent, normal);
 }

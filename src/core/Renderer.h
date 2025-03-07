@@ -5,137 +5,160 @@
 #ifndef PHOTON_RENDERER_H
 #define PHOTON_RENDERER_H
 
-#include "PhotonCore.h"
-#include "CMesh.h"
 #include "CCamera.h"
+#include "CMesh.h"
 #include "ResourceLoader.h"
 
+
 #include <webgpu/webgpu_cpp.h>
-#include <iostream>
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
 #else
 #include <webgpu/webgpu_glfw.h>
 #endif
 
-#include <vector>
-#include <array>
+namespace photon {
 
-namespace photon
-{
-
-struct ShaderUniforms
-{
-    m4 m_Model;
-    m4 m_View;
-    m4 m_Projection;
-    v3 m_CameraPosition;
-    f32 m_padding;
+struct ShaderUniforms {
+  m4 m_Model;
+  m4 m_View;
+  m4 m_Projection;
+  v3f m_CameraPosition;
+  f32 m_deltaTime = 0.0f;
+  f32 m_metallic = 0.0f;
+  f32 m_roughness = 0.0f;
+  f32 pad[2];
 };
 
-struct SkyboxMapUniforms
-{
-    m4 m_MVPi;
+struct SkyboxMapUniforms {
+  m4 m_MVPi;
 };
 
-class Renderer
-{
+struct MouseButtonEvent {
+  i32 Button;
+  i32 X, Y;
+};
+
+class Renderer {
 #ifdef __EMSCRIPTEN__
-    u32 kWidth = 1920;
-    u32 kHeight = 900;
+  u32 kWidth = 1920;
+  u32 kHeight = 900;
 #else
-    u32 kWidth = 1920;
-    u32 kHeight = 1080;
+  u32 kWidth = 1920;
+  u32 kHeight = 1080;
 #endif
 
+  f32 metalic = 0.f;
+  f32 roughness = 0.f;
+
 private:
-    wgpu::Instance wInstance;
-    wgpu::Device wDevice;
-    wgpu::Surface wSurface;
-    wgpu::SwapChain wSwapChain;
-    wgpu::RenderPipeline wRenderPipeline;
+  wgpu::Instance wInstance;
+  wgpu::Device wDevice;
+  wgpu::Surface wSurface;
+  wgpu::SwapChain wSwapChain;
+  wgpu::RenderPipeline wRenderPipeline;
 
-    wgpu::RenderPipeline wCubeMapPipeline;
+  wgpu::RenderPipeline wCubeMapPipeline;
 
-    std::vector<wgpu::VertexBufferLayout> wVertexBufferLayouts;
-    std::vector<wgpu::VertexAttribute> wVertexAttributes;
+  std::vector<wgpu::VertexBufferLayout> wVertexBufferLayouts;
+  std::vector<wgpu::VertexAttribute> wVertexAttributes;
 
-    std::vector<wgpu::BindGroupLayoutEntry> wBindGroupLayoutEntries;
-    wgpu::BindGroupLayout wBindGroupLayout;
-    wgpu::BindGroup wBindGroup;
-    std::vector<wgpu::BindGroupEntry> wBindGroupEntries;
+  std::vector<wgpu::BindGroupLayoutEntry> wBindGroupLayoutEntries;
+  wgpu::BindGroupLayout wBindGroupLayout;
+  wgpu::BindGroup wBindGroup;
+  std::vector<wgpu::BindGroupEntry> wBindGroupEntries;
 
-    wgpu::Buffer wUniformBuffer;
-    wgpu::Buffer wSkyboxUniformBuffer;
+  wgpu::Buffer wUniformBuffer;
+  wgpu::Buffer wSkyboxUniformBuffer;
 
-    wgpu::DepthStencilState wDepthStencilState;
-    wgpu::Texture wDepthTexture;
-    wgpu::TextureView wDepthTextureView;
+  wgpu::DepthStencilState wDepthStencilState;
+  wgpu::Texture wDepthTexture;
+  wgpu::TextureView wDepthTextureView;
 
-    wgpu::Sampler wSampler;
+  wgpu::Sampler wSampler;
 
-    wgpu::Texture wAlbedoTexture;
-    wgpu::TextureView wAlbedoTextureView;
+  wgpu::Texture wAlbedoTexture;
+  wgpu::TextureView wAlbedoTextureView;
 
-    wgpu::Texture wNormalTexture;
-    wgpu::TextureView wNormalTextureView;
+  wgpu::Texture wNormalTexture;
+  wgpu::TextureView wNormalTextureView;
 
-    wgpu::Texture wRoughnessTexture;
-    wgpu::TextureView wRoughnessTextureView;
+  wgpu::Texture wRoughnessTexture;
+  wgpu::TextureView wRoughnessTextureView;
 
-    wgpu::Texture wMetallicTexture;
-    wgpu::TextureView wMetallicTextureView;
+  wgpu::Texture wMetallicTexture;
+  wgpu::TextureView wMetallicTextureView;
 
-    wgpu::Texture wSkyboxTexture;
-    wgpu::TextureView wSkyboxTextureView;
+  wgpu::Texture wSkyboxTexture;
+  wgpu::TextureView wSkyboxTextureView;
 
-    wgpu::BindGroupLayout wSkyboxBindGroupLayout;
-    wgpu::BindGroup wSkyboxBindGroup;
-    std::array<wgpu::BindGroupEntry, 3> wSkyboxBindGroupEntries;
-    std::array<wgpu::BindGroupLayoutEntry, 3> wSkyboxBindGroupEntryLayouts;
+  wgpu::BindGroupLayout wSkyboxBindGroupLayout;
+  wgpu::BindGroup wSkyboxBindGroup;
+  std::array<wgpu::BindGroupEntry, 3> wSkyboxBindGroupEntries;
+  std::array<wgpu::BindGroupLayoutEntry, 3> wSkyboxBindGroupEntryLayouts;
 
-    wgpu::VertexAttribute wSkyboxVertexAttribute;
-    wgpu::VertexBufferLayout wSkyboxVertexBufferLayout;
+  wgpu::VertexAttribute wSkyboxVertexAttribute;
+  wgpu::VertexBufferLayout wSkyboxVertexBufferLayout;
 
-    CMesh Mesh;
-    CCamera Camera;
+  CMesh Mesh;
+  CCamera Camera;
+
+  f32 MeshYaw = 0.f;
+  f32 MeshPitch = 0.f;
+  f32 MeshRoll = 0.f;
+
+  v3i InputRotation{};
+
 public:
-    static Renderer& Instance();
-    static bool Go();
+  static Renderer &Instance();
+  static bool Go();
+
+  Renderer() = default;
+  ~Renderer() = default;
+
 private:
-    Renderer() = default;
-    ~Renderer() = default;
+  void Start();
 
-    void Start();
+  void GetDevice(void (*callback)(wgpu::Device));
 
-    void GetDevice(void (*callback)(wgpu::Device));
+  void InitGraphics();
 
-    void InitGraphics();
+  void SetupSwapChain();
 
-    void SetupSwapChain();
+  void SetupMeshVertexBuffers();
 
-    void SetupMeshVertexBuffers();
+  void SetupDepthStencil();
+  void LoadTextures(const std::string &name, ETextureImportType type);
+  void SetupMeshUniformBuffer();
+  void SetupSampler();
+  void SetupMeshBindGroupLayout();
+  void SetupMeshBindGroup();
 
-    void SetupDepthStencil();
-    void LoadTextures(const std::string& name, ETextureImportType type);
-    void SetupMeshUniformBuffer();
-    void SetupSampler();
-    void SetupMeshBindGroupLayout();
-    void SetupMeshBindGroup();
+  void SetupSkyboxBindGroupLayout();
+  void SetupSkyboxBindGroup();
 
-    void SetupSkyboxBindGroupLayout();
-    void SetupSkyboxBindGroup();
+  void SetupMeshPipeline();
+  void SetupSkyboxPipeline();
 
-    void SetupMeshPipeline();
-    void SetupSkyboxPipeline();
+  void DrawMesh(wgpu::RenderPassEncoder &renderPass);
+  void DrawSkybox(wgpu::RenderPassEncoder &renderPass);
 
-    void DrawMesh(wgpu::RenderPassEncoder& renderPass);
-    void DrawSkybox(wgpu::RenderPassEncoder& renderPass);
-    void Render();
+  void Update();
+  void Render();
 
-    void SetupCamera();
+  void SetupCamera();
+
+public:
+  void OnInputDown(const std::string &key);
+  void OnInputUp(const std::string &key);
+  void OnMouseDown(const MouseButtonEvent &event);
+  void OnMouseUp(const MouseButtonEvent &event);
+  void OnMouseOver(const v2i &position);
+  void OnMouseOut(const v2i &position);
+  void OnSliderChange(const std::string &name, i32 value);
+  void OnScroll(const float delta);
 };
 
-} // photon
+} // namespace photon
 
-#endif //PHOTON_RENDERER_H
+#endif // PHOTON_RENDERER_H

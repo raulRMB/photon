@@ -16,8 +16,10 @@ struct VertexOutput {
     @location(4) uv: vec2f,
     @location(5) view_pos: vec3f,
     @location(6) frag_pos: vec3f,
-    @location(7) padding: f32,
-    @location(8) view_dir: vec3f
+    @location(7) delta_time: f32,
+    @location(8) view_dir: vec3f,
+    @location(9) metalness: f32,
+    @location(10) roughness: f32
 }
 
 struct MyUniforms {
@@ -25,7 +27,9 @@ struct MyUniforms {
     view : mat4x4<f32>,
     proj : mat4x4<f32>,
     view_pos: vec3f,
-    pad : f32
+    delta_time : f32,
+    metalic: f32,
+    roughness: f32
 }
 
 @group(0) @binding(0) var<uniform> u_uniforms: MyUniforms;
@@ -59,7 +63,9 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     out.color = in.color;
     out.view_pos = u_uniforms.view_pos;
     out.frag_pos = (u_uniforms.model * vec4f(in.position, 1.0)).xyz;
-    out.padding = u_uniforms.pad;
+    out.metalness = u_uniforms.metalic;
+    out.roughness = u_uniforms.roughness;
+    out.delta_time = u_uniforms.delta_time;
     out.view_dir = out.view_pos - worldPosition.xyz;
     return out;
 }
@@ -114,14 +120,14 @@ struct Light {
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     var lights = array<Light, 4>();
 
-    let cos0 = cos(in.padding);
-    let sin0 = sin(in.padding);
-    let cos1 = cos(in.padding + PI / 2.0);
-    let sin1 = sin(in.padding + PI / 2.0);
-    let cos2 = cos(in.padding + PI);
-    let sin2 = sin(in.padding + PI);
-    let cos3 = cos(in.padding + PI * 3.0 / 2.0);
-    let sin3 = sin(in.padding + PI * 3.0 / 2.0);
+    let cos0 = cos(in.delta_time);
+    let sin0 = sin(in.delta_time);
+    let cos1 = cos(in.delta_time + PI / 2.0);
+    let sin1 = sin(in.delta_time + PI / 2.0);
+    let cos2 = cos(in.delta_time + PI);
+    let sin2 = sin(in.delta_time + PI);
+    let cos3 = cos(in.delta_time + PI * 3.0 / 2.0);
+    let sin3 = sin(in.delta_time + PI * 3.0 / 2.0);
 
     lights[0].position = vec3f(cos0, 1, sin0);
     lights[0].color = vec3f(1.0, 0.0, 0.0);
@@ -137,10 +143,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 
     let frag_pos = in.frag_pos;
 
-    let metalic = textureSample(base_color_texture, texture_sampler, in.uv).r;
+    // let metalic = textureSample(base_color_texture, texture_sampler, in.uv).r * in.metalness;
+    let metalic = in.metalness;
     let albedo = textureSample(base_color_texture, texture_sampler, in.uv).rgb;
-    let roughness = textureSample(roughness_texture, texture_sampler, in.uv).r;
+    let roughness = in.roughness;
+    // let roughness = textureSample(roughness_texture, texture_sampler, in.uv).r * in.roughness;
     let local_normal = textureSample(normal_texture, texture_sampler, in.uv).rgb;
+
 
     let TBN = mat3x3f(
         normalize(in.tangent),
@@ -191,11 +200,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    let ambient = vec3f(0.03) * albedo * 0.2;
-    var color = ambient + Lo;
+    var color = Lo; 
 
     color = color / (color + vec3f(1.0));
     color = pow(color, vec3f(1.0 / 2.2));
+    color += irradiance * metalic * (1.0 - roughness);
 
     return vec4f(color, 1.0);
 }

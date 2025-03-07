@@ -1,18 +1,80 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en-us">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-	<meta name="apple-mobile-web-app-capable" content="yes" />
-	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-	<title>Photon</title>
-	<style>
-		body { background:#333; font-family:"Verdana","Helvetica Neue","Helvetica","Arial",sans-serif; margin:1em 0; }
-		canvas { position:absolute; top:0px; left:0px; border:none; margin:0; width: 100%; height: 100%; overflow: hidden; display: block; }
-	</style>
-</head>
-<body>
-<canvas></canvas>
-{{{ SCRIPT }}}
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Photon</title>
+    <style>
+      body {
+        background: #333;
+        font-family: "Verdana", "Helvetica Neue", "Helvetica", "Arial",
+          sans-serif;
+        margin: 1em 0;
+      }
+      canvas {
+        position: absolute;
+        top: 140px; /* Adjust so it's below the text */
+        left: 20px;
+        border: none;
+        margin: 0;
+        width: 80%;
+        height: calc(100% - 160px); /* Leave space for the heading */
+        overflow: hidden;
+        display: block;
+        z-index: 1; /* Behind the text */
+      }
+      h1 {
+        color: #fff;
+        margin-left: 20px;
+      }
+      #title {
+        font-size: 2em;
+      }
+      #message {
+        font-size: 1.5em;
+      }
+      .slider {
+        position: absolute;
+        z-index: 2; /* In front of the canvas */
+      }
+      #metalnessSlider {
+        top: 20px;
+        right: 20%;
+      }
+      #roughnessSlider {
+        top: 40px;
+        right: 20%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="title">Photon Renderer</h1>
+    <h1 id="message">Use WASD to Rotate</h1>
+    <input
+      class="slider"
+      type="range"
+      min="0"
+      max="100"
+      value="50"
+      id="metalnessSlider"
+    />
+    <input
+      class="slider"
+      type="range"
+      min="0"
+      max="100"
+      value="50"
+      id="roughnessSlider"
+    />
+    <canvas id="photonCanvas"></canvas>
+    {{{ SCRIPT }}}
+  </body>
 </html>

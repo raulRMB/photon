@@ -1,3 +1,6 @@
 .idea/
 cmake-build*/
-web-build/
+web-build*/
+out*/
+.vs/
+compile_commands.json

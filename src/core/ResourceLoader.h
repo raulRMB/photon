@@ -44,7 +44,7 @@ public:
 
     static u32 BitWidth(u32 m);
 private:
-    static m3 CalculateTangent(const v3& p1, const v3& p2, const v3& p3, const v2& uv1, const v2& uv2, const v2& uv3);
+    static m3 CalculateTangent(const v3f& p1, const v3f& p2, const v3f& p3, const v2f& uv1, const v2f& uv2, const v2f& uv3);
 };
 
 } // photon

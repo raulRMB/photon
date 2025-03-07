@@ -11,7 +11,7 @@ namespace photon
 #if defined(__EMSCRIPTEN__)
 #define RESOURCE_PATH std::string("res/")
 #else
-#define RESOURCE_PATH std::string("../res/")
+#define RESOURCE_PATH std::string("res/")
 #endif
 
 Reader::Reader(const EReaderType type, const EReaderMode mode, const EReaderFormat format) :
@@ -74,7 +74,7 @@ bool Reader::Open(const std::string& path)
     m_File.open(RESOURCE_PATH + path, flags);
     if (!m_File.is_open())
     {
-        printf("Reader::Open: Failed to open file %s\n", path.c_str());
+        printf("Reader::Open: Failed to open file %s\n", (RESOURCE_PATH + path).c_str());
         return false;
     }
     return true;

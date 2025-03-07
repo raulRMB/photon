@@ -2,5 +2,5 @@
 
 int main()
 {
-    return photon::Renderer::Go();
+  return photon::Renderer::Go();
 }
